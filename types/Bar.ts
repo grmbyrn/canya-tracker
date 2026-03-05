@@ -8,9 +8,9 @@ export interface Bar {
   /** neighbourhood / barri */
   barri: string;
   address: string;
-  latitude: number;
-  longitude: number;
-  isOpen: boolean;
+  latitude?: number;
+  longitude?: number;
+  isOpen?: boolean;
   /** size label, e.g. "33cl" */
   sizeLabel: string;
 }

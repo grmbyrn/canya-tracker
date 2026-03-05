@@ -1,38 +1,47 @@
 import { ThemedText } from "@/components/themed-text";
 import { useBars } from "@/hooks/useBars";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    FlatList,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function MapScreen() {
-  const { bars, loading } = useBars();
+  const { bars, loading, setPrice } = useBars();
 
-  const maps: { MapView?: any; Marker?: any } = useMemo(() => {
-    try {
-      // dynamic require so tests and environments without native maps don't fail
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const RnMaps = require("react-native-maps");
-      return {
-        MapView: RnMaps.default ?? RnMaps.MapView ?? RnMaps,
-        Marker: RnMaps.Marker ?? RnMaps,
-      };
-    } catch (_e) {
-      return {};
-    }
+  const [maps, setMaps] = useState<{ MapView?: any; Marker?: any }>({});
+
+  useEffect(() => {
+    let mounted = true;
+    // dynamic import so tests and environments without native maps don't fail
+    import("react-native-maps")
+      .then((RnMaps) => {
+        if (!mounted) return;
+        const anyMaps = RnMaps as any;
+        setMaps({
+          MapView: anyMaps.default ?? anyMaps.MapView ?? anyMaps,
+          Marker: anyMaps.Marker ?? anyMaps,
+        });
+      })
+      .catch(() => {
+        // leave maps empty when module isn't available
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+  // Hooks must be called unconditionally at the top level
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [priceText, setPriceText] = useState("");
+  const selected = bars.find((b) => b.id === selectedId) ?? null;
 
   if (maps.MapView) {
     const MapView = maps.MapView;
     const Marker = maps.Marker;
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [priceText, setPriceText] = useState("");
-
-    const selected = bars.find((b) => b.id === selectedId) ?? null;
 
     return (
       <View style={styles.container}>
@@ -46,25 +55,29 @@ export default function MapScreen() {
             longitudeDelta: 0.05,
           }}
         >
-          {bars.map((b) =>
-            b.location ? (
+          {bars.map((b) => {
+            const loc = (b as any).location
+              ? (b as any).location
+              : b.latitude != null && b.longitude != null
+              ? { lat: b.latitude, lng: b.longitude }
+              : null;
+
+            return loc ? (
               <Marker
                 key={b.id}
                 coordinate={{
-                  latitude: b.location.lat,
-                  longitude: b.location.lng,
+                  latitude: loc.lat,
+                  longitude: loc.lng,
                 }}
                 title={b.name}
-                description={
-                  b.latestPrice ? `€${b.latestPrice}` : "Price unknown"
-                }
+                description={b.latestPrice ? `€${b.latestPrice}` : "Price unknown"}
                 onPress={() => {
                   setSelectedId(b.id);
                   setPriceText(b.latestPrice ? String(b.latestPrice) : "");
                 }}
               />
-            ) : null,
-          )}
+            ) : null;
+          })}
         </MapView>
 
         {selected ? (
@@ -83,9 +96,7 @@ export default function MapScreen() {
               onPress={async () => {
                 const p = parseFloat(priceText);
                 if (!Number.isNaN(p) && selected) {
-                  await (await import("@/hooks/useBars"))
-                    .useBars()
-                    .setPrice(selected.id, p);
+                  await setPrice(selected.id, p);
                 }
                 setSelectedId(null);
                 setPriceText("");
@@ -116,9 +127,14 @@ export default function MapScreen() {
           renderItem={({ item }) => (
             <ThemedText>
               {item.name} — €{item.latestPrice ?? "n/a"}{" "}
-              {item.location
-                ? `(${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)})`
-                : ""}
+              {(() => {
+                const loc = (item as any).location
+                  ? (item as any).location
+                  : item.latitude != null && item.longitude != null
+                  ? { lat: item.latitude, lng: item.longitude }
+                  : null;
+                return loc ? `(${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})` : "";
+              })()}
             </ThemedText>
           )}
         />
@@ -137,5 +153,37 @@ const styles = StyleSheet.create({
     height: 400,
     width: "100%",
     marginTop: 8,
+  },
+  bottomCard: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  input: {
+    height: 40,
+    paddingHorizontal: 8,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 8,
+    backgroundColor: "#fff",
+  },
+  button: {
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#007aff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
   },
 });

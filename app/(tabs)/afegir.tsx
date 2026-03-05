@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import React, { useEffect, useState } from "react";
 import {
     Alert,
     StyleSheet,
@@ -17,6 +18,17 @@ export default function AfegirScreen() {
   const [address, setAddress] = useState("");
   const [price, setPrice] = useState("");
   const [size, setSize] = useState("33cl");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isOpen, setIsOpen] = useState<boolean | null>(null);
+  const { userLocation, locateMe } = useUserLocation();
+
+  useEffect(() => {
+    if (userLocation?.latitude != null && userLocation?.longitude != null) {
+      setLatitude(userLocation.latitude);
+      setLongitude(userLocation.longitude);
+    }
+  }, [userLocation]);
 
   const onSubmit = async () => {
     if (!name || !address || !price) {
@@ -24,22 +36,35 @@ export default function AfegirScreen() {
       return;
     }
     const parsed = parseFloat(price.replace("€", "").replace(",", "."));
+    if (Number.isNaN(parsed)) {
+      Alert.alert("Error", "Preu no vàlid");
+      return;
+    }
     try {
-      await repo.submitBar({
+      const payload: any = {
         name,
         address,
         price: parsed,
         sizeLabel: size,
         barri: "Desconegut",
-        latitude: 41.3917,
-        longitude: 2.1649,
-        isOpen: true,
-      });
+        // isOpen set from the form (null -> undefined)
+        isOpen: isOpen ?? undefined,
+      };
+      if (latitude != null && longitude != null) {
+        payload.latitude = latitude;
+        payload.longitude = longitude;
+      }
+
+      // submit as any to allow optional coordinates
+      await repo.submitBar(payload as any);
       Alert.alert("Fet", "Bar afegit correctament");
       setName("");
       setAddress("");
       setPrice("");
       setSize("33cl");
+      setLatitude(null);
+      setLongitude(null);
+      setIsOpen(null);
     } catch (err) {
       Alert.alert("Error", "No s'ha pogut enviar el bar");
     }
@@ -86,6 +111,51 @@ export default function AfegirScreen() {
             <Text style={{ color: COLORS.text }}>{s}</Text>
           </TouchableOpacity>
         ))}
+      </View>
+
+      <Text style={styles.label}>Ubicació</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 8,
+          alignItems: "center",
+          marginTop: 8,
+        }}
+      >
+        <TouchableOpacity
+          style={[styles.sizeBtn, { flex: 1 }]}
+          onPress={() => {
+            void locateMe();
+          }}
+        >
+          <Text style={{ color: COLORS.text }}>
+            {latitude != null && longitude != null
+              ? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+              : "Usa la meva ubicació"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.label}>Estat</Text>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}
+      >
+        <TouchableOpacity
+          style={[
+            styles.sizeBtn,
+            isOpen === true && styles.sizeActive,
+            { marginRight: 8 },
+          ]}
+          onPress={() => setIsOpen(true)}
+        >
+          <Text style={{ color: COLORS.text }}>Obert</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sizeBtn, isOpen === false && styles.sizeActive]}
+          onPress={() => setIsOpen(false)}
+        >
+          <Text style={{ color: COLORS.text }}>Tancat</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={{ marginTop: 18 }}>

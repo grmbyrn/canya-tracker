@@ -1,24 +1,46 @@
-import React, { useMemo } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useBars } from "@/hooks/useBars";
+import React, { useMemo, useState } from "react";
+import {
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { COLORS } from "../../constants/colors";
 import { LIST_SORTS } from "../../constants/map";
-import { useBars } from "../../hooks/useBars";
 import { formatPrice, getPriceColor } from "../../utils/priceHelpers";
 
 export default function ListScreen() {
   const { filteredBars } = useBars();
+  const [sortKey, setSortKey] = useState<string>("cheapest");
 
   const sorted = useMemo(() => {
-    return [...filteredBars].sort((a, b) => a.price - b.price);
-  }, [filteredBars]);
+    const copy = [...filteredBars];
+    switch (sortKey) {
+      case "cheapest":
+        return copy.sort((a, b) => a.price - b.price);
+      case "highest_price":
+        return copy.sort((a, b) => b.price - a.price);
+      case "name":
+        return copy.sort((a, b) => a.name.localeCompare(b.name));
+      case "closest":
+      default:
+        return copy; // closeness requires user location; keep unsorted by default
+    }
+  }, [filteredBars, sortKey]);
 
   return (
     <View style={styles.container}>
       <View style={styles.sortRow}>
         {LIST_SORTS.map((s) => (
-          <View key={s.key} style={styles.sortChip}>
+          <TouchableOpacity
+            key={s.key}
+            onPress={() => setSortKey(s.key)}
+            style={[styles.sortChip, sortKey === s.key && styles.sortActive]}
+          >
             <Text style={styles.sortText}>{s.label}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
 
@@ -69,6 +91,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   sortText: { color: COLORS.text },
+  sortActive: { borderColor: COLORS.accent, borderWidth: 1 },
   card: {
     flexDirection: "row",
     alignItems: "center",

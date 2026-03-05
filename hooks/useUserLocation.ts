@@ -5,20 +5,35 @@ type UserLocation = { latitude: number; longitude: number } | null;
 type LocationApi = any;
 
 export function useUserLocation(LocationApiParam?: LocationApi) {
-  // Resolve `expo-location` dynamically to avoid bundler errors when the
-  // dependency is not installed (useful for environments without native
-  // modules or during certain test setups).
-  let resolvedLocationApi: LocationApi | undefined = LocationApiParam;
-  if (!resolvedLocationApi) {
-    try {
-      // Use eval to prevent static analysis of require by Metro bundler.
-      // eslint-disable-next-line no-eval
-      const req: any = eval("require");
-      resolvedLocationApi = req("expo-location");
-    } catch (err) {
-      resolvedLocationApi = undefined;
+  // Resolve `expo-location` safely at runtime so bundlers don't fail when
+  // the optional native module isn't installed. Use state + effect so the
+  // reference is stable for `locateMe`.
+  const [resolvedLocationApi, setResolvedLocationApi] = useState<
+    LocationApi | undefined
+  >(LocationApiParam ?? undefined);
+
+  useEffect(() => {
+    let mounted = true;
+    if (LocationApiParam) {
+      setResolvedLocationApi(LocationApiParam);
+      return;
     }
-  }
+
+    // Dynamic import; will reject at runtime if module isn't available.
+    import("expo-location")
+      .then((mod) => {
+        if (!mounted) return;
+        setResolvedLocationApi(mod as any);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setResolvedLocationApi(undefined);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [LocationApiParam]);
 
   const [userLocation, setUserLocation] = useState<UserLocation>(null);
   const [locationError, setLocationError] = useState<string | null>(null);

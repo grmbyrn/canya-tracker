@@ -1,5 +1,5 @@
-import { InMemoryBarRepository } from "../data/repositories/inMemoryBarRepository";
-import { BarService } from "../data/services/barService";
+import { InMemoryBarRepository } from "@/app/data/repositories/inMemoryBarRepository";
+import { BarService } from "@/app/data/services/barService";
 
 describe("BarService", () => {
   it("returns null for unknown bar", async () => {

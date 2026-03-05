@@ -1,7 +1,7 @@
 import type { Bar } from "../types/Bar";
 import type { IBarRepository } from "./BarRepository";
 
-export class MockBarRepository implements IBarRepository {
+class MockBarRepository implements IBarRepository {
   private bars: Bar[] = [
     {
       id: "b1",
@@ -129,6 +129,44 @@ export class MockBarRepository implements IBarRepository {
     const id = `b_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     this.bars.push({ id, ...bar });
     return Promise.resolve();
+  }
+
+  async addOrUpdate(bar: Bar): Promise<void> {
+    const idx = this.bars.findIndex((b) => b.id === bar.id);
+    if (idx >= 0) {
+      this.bars[idx] = { ...this.bars[idx], ...bar };
+    } else {
+      this.bars.push(bar);
+    }
+    return Promise.resolve();
+  }
+
+  async addPrice(
+    barId: string,
+    price: number,
+    timestamp?: string,
+  ): Promise<void> {
+    const idx = this.bars.findIndex((b) => b.id === barId);
+    if (idx >= 0) {
+      // update prices history if present, and latestPrice/price
+      const existing = this.bars[idx];
+      const ts = timestamp ?? new Date().toISOString();
+      if ((existing as any).prices) {
+        (existing as any).prices = [
+          ...(existing as any).prices,
+          { price, timestamp: ts },
+        ];
+      } else {
+        (existing as any).prices = [{ price, timestamp: ts }];
+      }
+      this.bars[idx] = { ...existing, latestPrice: price, price };
+      return Promise.resolve();
+    }
+
+    // If bar not found, throw to avoid silent no-op
+    return Promise.reject(
+      new Error(`MockBarRepository.addPrice: bar '${barId}' not found`),
+    );
   }
 }
 

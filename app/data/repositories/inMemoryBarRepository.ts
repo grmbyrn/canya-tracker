@@ -9,7 +9,7 @@ export class InMemoryBarRepository implements BarRepository {
   }
 
   async listAll(): Promise<Bar[]> {
-    return this.bars;
+    return this.bars.slice();
   }
 
   async getById(id: string): Promise<Bar | undefined> {

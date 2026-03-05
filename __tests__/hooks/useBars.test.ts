@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { useBars } from "../../hooks/useBars";
+import { useBars } from "@/hooks/useBars";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import type { IBarRepository } from "../../repositories/BarRepository";
 import type { Bar } from "../../types/Bar";
 

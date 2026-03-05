@@ -1,6 +1,6 @@
-import { InMemoryBarRepository } from "../data/repositories/inMemoryBarRepository";
-import { BarService } from "../data/services/barService";
-import { BarsStore } from "../data/store/barsStore";
+import { InMemoryBarRepository } from "@/app/data/repositories/inMemoryBarRepository";
+import { BarService } from "@/app/data/services/barService";
+import { BarsStore } from "@/app/data/store/barsStore";
 
 describe("BarsStore", () => {
   it("lists bars and sets price through service", async () => {

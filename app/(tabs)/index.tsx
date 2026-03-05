@@ -1,3 +1,6 @@
+import { useBars } from "@/hooks/useBars";
+import { useSavedBars } from "@/hooks/useSavedBars";
+import { useUserLocation } from "@/hooks/useUserLocation";
 import React, { useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -10,9 +13,6 @@ import {
 } from "react-native";
 import { COLORS } from "../../constants/colors";
 import { BARCELONA_REGION, DARK_MAP_STYLE } from "../../constants/map";
-import { useBars } from "../../hooks/useBars";
-import { useSavedBars } from "../../hooks/useSavedBars";
-import { useUserLocation } from "../../hooks/useUserLocation";
 import {
   formatPrice,
   getDistance,
@@ -32,7 +32,7 @@ export default function MapScreen(): React.ReactElement {
   let MapsModule: any = null;
   try {
     // avoid static analysis by Metro bundler
-     
+
     const req: any = eval("require");
     MapsModule = req("react-native-maps");
   } catch (e) {
@@ -107,27 +107,32 @@ export default function MapScreen(): React.ReactElement {
           customMapStyle={DARK_MAP_STYLE}
           initialRegion={BARCELONA_REGION as Region}
         >
-          {filteredBars.map((bar) => (
-            <Marker
-              key={bar.id}
-              coordinate={{ latitude: bar.latitude, longitude: bar.longitude }}
-              onPress={() =>
-                onPinPress(bar.id, {
-                  latitude: bar.latitude,
-                  longitude: bar.longitude,
-                })
-              }
-            >
-              <View
-                style={[
-                  styles.pin,
-                  { backgroundColor: getPriceColor(bar.price) },
-                ]}
+          {filteredBars
+            .filter((bar) => bar.latitude != null && bar.longitude != null)
+            .map((bar) => (
+              <Marker
+                key={bar.id}
+                coordinate={{
+                  latitude: bar.latitude as number,
+                  longitude: bar.longitude as number,
+                }}
+                onPress={() =>
+                  onPinPress(bar.id, {
+                    latitude: bar.latitude as number,
+                    longitude: bar.longitude as number,
+                  })
+                }
               >
-                <Text style={styles.pinText}>{formatPrice(bar.price)}</Text>
-              </View>
-            </Marker>
-          ))}
+                <View
+                  style={[
+                    styles.pin,
+                    { backgroundColor: getPriceColor(bar.price) },
+                  ]}
+                >
+                  <Text style={styles.pinText}>{formatPrice(bar.price)}</Text>
+                </View>
+              </Marker>
+            ))}
         </MapView>
       ) : (
         <View
@@ -206,12 +211,20 @@ export default function MapScreen(): React.ReactElement {
             <Text style={styles.sheetRow}>
               Distància:{" "}
               {userLocation
-                ? getDistance(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    selectedBar.latitude,
-                    selectedBar.longitude,
-                  )
+                ? (() => {
+                    if (
+                      selectedBar.latitude == null ||
+                      selectedBar.longitude == null
+                    ) {
+                      return "—";
+                    }
+                    return getDistance(
+                      userLocation.latitude,
+                      userLocation.longitude,
+                      selectedBar.latitude as number,
+                      selectedBar.longitude as number,
+                    );
+                  })()
                 : "—"}
             </Text>
             <Text style={styles.sheetRow}>

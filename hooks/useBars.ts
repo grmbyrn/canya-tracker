@@ -44,6 +44,35 @@ export function useBars(repository?: IBarRepository) {
     }
   }, [bars, activeFilter]);
 
+  const setPrice = useCallback(
+    async (id: string, price: number) => {
+      setBars((prev) =>
+        prev.map((b) =>
+          b.id === id ? { ...b, price, latestPrice: price } : b,
+        ),
+      );
+      // Optionally persist change to repository if API supports it
+      try {
+        // best-effort: if repo has addPrice or addOrUpdate, call it
+        if (typeof repo.addPrice === "function") {
+          await repo.addPrice(id, price);
+        } else if (typeof repo.addOrUpdate === "function") {
+          // attempt to update via addOrUpdate
+          const existing = // try to get existing bar
+            typeof repo.getBarById === "function"
+              ? await repo.getBarById(id)
+              : null;
+          if (existing) {
+            await repo.addOrUpdate({ ...existing, latestPrice: price });
+          }
+        }
+      } catch {
+        /* ignore persistence errors for now */
+      }
+    },
+    [repo],
+  );
+
   return {
     bars,
     loading,
@@ -52,6 +81,7 @@ export function useBars(repository?: IBarRepository) {
     setActiveFilter,
     filteredBars,
     reload: load,
+    setPrice,
   };
 }
 

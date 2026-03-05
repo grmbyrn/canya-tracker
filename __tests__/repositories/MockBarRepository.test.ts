@@ -1,4 +1,4 @@
-import { MockBarRepository } from "../../repositories/MockBarRepository";
+import MockBarRepository from "../../repositories/MockBarRepository";
 
 describe("MockBarRepository", () => {
   let repo: MockBarRepository;

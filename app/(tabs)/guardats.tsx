@@ -1,3 +1,4 @@
+import { useSavedBars } from "@/hooks/useSavedBars";
 import React from "react";
 import {
     Alert,
@@ -8,7 +9,6 @@ import {
     View,
 } from "react-native";
 import { COLORS } from "../../constants/colors";
-import { useSavedBars } from "../../hooks/useSavedBars";
 import { formatPrice } from "../../utils/priceHelpers";
 
 export default function GuardatsScreen() {

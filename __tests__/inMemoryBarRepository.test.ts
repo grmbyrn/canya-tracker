@@ -1,5 +1,5 @@
-import { Bar } from "../data/models";
-import { InMemoryBarRepository } from "../data/repositories/inMemoryBarRepository";
+import { Bar } from "@/app/data/models";
+import { InMemoryBarRepository } from "@/app/data/repositories/inMemoryBarRepository";
 
 describe("InMemoryBarRepository", () => {
   it("returns bar with latest cana price", async () => {
